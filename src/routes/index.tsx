@@ -135,29 +135,85 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="bg-background text-foreground pb-20 md:pb-0">
-      <OrgJsonLd />
-      <ProductJsonLd />
-      <FaqJsonLd />
-      <Nav />
-      <Hero />
-      <Comparison />
-      <FinalCTA />
-      <Benefits />
-      <LabReport />
-      <SocialProof />
-      <Ingredients />
-      <ResearchSimple />
-      <FAQ />
-      <Footer />
-      <StickyBuy />
-    </div>
+    <BuyProvider>
+      <div className="bg-background text-foreground pb-20 md:pb-0">
+        <OrgJsonLd />
+        <ProductJsonLd />
+        <FaqJsonLd />
+        <Nav />
+        <Hero />
+        <Comparison />
+        <FinalCTA />
+        <Benefits />
+        <LabReport />
+        <SocialProof />
+        <Ingredients />
+        <ResearchSimple />
+        <FAQ />
+        <Footer />
+        <StickyBuy />
+      </div>
+    </BuyProvider>
   );
+}
+
+type BuyContextValue = {
+  product: ShopifyProduct | null;
+  loading: boolean;
+  onBuy: () => Promise<void>;
+};
+
+const BuyCtx = createContext<BuyContextValue>({ product: null, loading: false, onBuy: async () => {} });
+const useBuy = () => useContext(BuyCtx);
+
+function BuyProvider({ children }: { children: React.ReactNode }) {
+  useCartSync();
+  const [product, setProduct] = useState<ShopifyProduct | null>(null);
+  const [loading, setLoading] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+
+  useEffect(() => {
+    fetchProducts(1)
+      .then((prods) => setProduct(prods[0] ?? null))
+      .catch((e) => console.error("Shopify fetch failed", e));
+  }, []);
+
+  const onBuy = useCallback(async () => {
+    if (!product) {
+      toast.error("Product coming soon", { description: "Checkout will be enabled once the product is live." });
+      return;
+    }
+    const variant = product.node.variants.edges.find((v) => v.node.availableForSale)?.node
+      ?? product.node.variants.edges[0]?.node;
+    if (!variant) {
+      toast.error("Out of stock");
+      return;
+    }
+    setLoading(true);
+    try {
+      await addItem({
+        product,
+        variantId: variant.id,
+        variantTitle: variant.title,
+        price: variant.price,
+        quantity: 1,
+        selectedOptions: variant.selectedOptions ?? [],
+      });
+      const url = useCartStore.getState().getCheckoutUrl();
+      if (url) window.open(url, "_blank");
+      else toast.error("Could not start checkout");
+    } finally {
+      setLoading(false);
+    }
+  }, [product, addItem]);
+
+  return <BuyCtx.Provider value={{ product, loading, onBuy }}>{children}</BuyCtx.Provider>;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{children}</p>;
 }
+
 
 function CTAButton({ children, href = "#shop", variant = "solid" }: { children: React.ReactNode; href?: string; variant?: "solid" | "ghost" }) {
   if (variant === "ghost") {
