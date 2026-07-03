@@ -215,11 +215,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 
-function CTAButton({ children, href = "#shop", variant = "solid" }: { children: React.ReactNode; href?: string; variant?: "solid" | "ghost" }) {
+function CTAButton({ children, href, variant = "solid" }: { children: React.ReactNode; href?: string; variant?: "solid" | "ghost" }) {
+  const { onBuy, loading } = useBuy();
+  const handleClick = (e: React.MouseEvent) => {
+    if (href && href !== "#shop") return;
+    e.preventDefault();
+    void onBuy();
+  };
   if (variant === "ghost") {
     return (
       <a
-        href={href}
+        href={href ?? "#shop"}
+        onClick={handleClick}
         className="inline-flex items-center gap-2 rounded-full border px-7 py-3 text-sm transition hover:opacity-80"
         style={{ borderColor: "var(--forest)", color: "var(--forest)" }}
       >
@@ -229,7 +236,9 @@ function CTAButton({ children, href = "#shop", variant = "solid" }: { children: 
   }
   return (
     <a
-      href={href}
+      href={href ?? "#shop"}
+      onClick={handleClick}
+      aria-busy={loading}
       className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm transition hover:opacity-90"
       style={{ backgroundColor: "var(--forest)", color: "var(--ivory)" }}
     >
@@ -237,6 +246,7 @@ function CTAButton({ children, href = "#shop", variant = "solid" }: { children: 
     </a>
   );
 }
+
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -1104,18 +1114,9 @@ function FinalCTA() {
         </Reveal>
 
         <Reveal delay={0.3}>
-          <a
-            href="#"
-            className="mt-7 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-full px-9 py-5 text-[15px] font-medium tracking-wide transition hover:opacity-95 active:scale-[0.99]"
-            style={{
-              backgroundColor: "var(--forest)",
-              color: "var(--ivory)",
-              boxShadow: "0 14px 30px -10px rgba(30,55,35,0.45)",
-            }}
-          >
-            Get Yours For {PRICE} <ArrowUpRight className="h-4 w-4" />
-          </a>
+          <FinalBuyButton />
         </Reveal>
+
 
         <Reveal delay={0.35}>
           <p
@@ -1137,7 +1138,27 @@ function FinalCTA() {
 }
 
 
+function FinalBuyButton() {
+  const { onBuy, loading } = useBuy();
+  return (
+    <button
+      type="button"
+      onClick={() => void onBuy()}
+      disabled={loading}
+      className="mt-7 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-full px-9 py-5 text-[15px] font-medium tracking-wide transition hover:opacity-95 active:scale-[0.99] disabled:opacity-70"
+      style={{
+        backgroundColor: "var(--forest)",
+        color: "var(--ivory)",
+        boxShadow: "0 14px 30px -10px rgba(30,55,35,0.45)",
+      }}
+    >
+      {loading ? "Opening checkout…" : <>Get Yours For {PRICE} <ArrowUpRight className="h-4 w-4" /></>}
+    </button>
+  );
+}
+
 function StickyBuy() {
+  const { onBuy, loading } = useBuy();
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t px-4 py-3 md:hidden"
@@ -1151,16 +1172,19 @@ function StickyBuy() {
         <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Berberine HCL</span>
         <span className="font-display text-lg" style={{ color: "var(--forest)" }}><PriceTag /></span>
       </div>
-      <a
-        href="#shop"
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition active:opacity-80"
+      <button
+        type="button"
+        onClick={() => void onBuy()}
+        disabled={loading}
+        className="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition active:opacity-80 disabled:opacity-70"
         style={{ backgroundColor: "var(--forest)", color: "var(--ivory)" }}
       >
-        <ShoppingBag className="h-4 w-4" /> Buy Now
-      </a>
+        <ShoppingBag className="h-4 w-4" /> {loading ? "Opening…" : "Buy Now"}
+      </button>
     </div>
   );
 }
+
 
 function Footer() {
   return (
