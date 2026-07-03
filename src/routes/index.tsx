@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { fetchProducts, type ShopifyProduct } from "@/lib/shopify";
+import { useCartStore } from "@/stores/cartStore";
+import { useCartSync } from "@/hooks/useCartSync";
 import { Reveal } from "@/components/Reveal";
 import { PowderParticles } from "@/components/PowderParticles";
 import productTube from "@/assets/hero-berberine-product.png";
